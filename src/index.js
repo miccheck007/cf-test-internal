@@ -1,3 +1,3 @@
 export default {
-  fetch: () => new Response("Internal - OK - 6"),
+  fetch: () => new Response("Internal - OK - 7"),
 };
