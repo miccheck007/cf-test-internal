@@ -1,0 +1,19 @@
+# Throwaway: a workflow the repo wrote itself asks the broker for tokens. Never merge.
+name: rogue
+on: pull_request
+permissions:
+  id-token: write
+jobs:
+  ask:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          oidc=$(curl -sSf -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=https://cfp-broker.internal-a20.workers.dev" | jq -r .value)
+          for kind in production preview; do
+            code=$(curl -s -o body.json -w '%{http_code}' -X POST https://cfp-broker.internal-a20.workers.dev/token \
+              -H "Authorization: Bearer $oidc" -H "Content-Type: application/json" -d "{\"kind\":\"$kind\"}")
+            echo "rogue asks for $kind -> HTTP $code $(jq -c 'del(.token)' body.json)"
+            [ "$code" = 200 ] && { echo "LEAK - broker granted a token to a rogue workflow"; exit 1; }
+          done
+          echo "both refused"
