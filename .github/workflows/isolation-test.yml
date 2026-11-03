@@ -7,7 +7,9 @@ jobs:
     environment: production
     steps:
       - env: { T: "${{ secrets.CFP_DEPLOY_TOKEN }}" }
-        run: if [ -n "$T" ]; then echo "LEAK: production token visible to a PR"; exit 1; fi; echo "production token empty"
+        run: |
+          if [ -n "$T" ]; then echo "LEAK - production token visible to a PR"; exit 1; fi
+          echo "production token empty"
   preview-token-scope:
     runs-on: ubuntu-latest
     environment: preview
