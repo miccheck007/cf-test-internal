@@ -1,0 +1,23 @@
+# Throwaway: proves a PR branch can't reach production. Never merge.
+name: isolation-test
+on: pull_request
+jobs:
+  production-from-pr:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - env: { T: "${{ secrets.CFP_DEPLOY_TOKEN }}" }
+        run: if [ -n "$T" ]; then echo "LEAK: production token visible to a PR"; exit 1; fi; echo "production token empty"
+  preview-token-scope:
+    runs-on: ubuntu-latest
+    environment: preview
+    env:
+      T: ${{ secrets.CFP_PREVIEW_TOKEN }}
+      A: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - run: |
+          for w in cf-test-internal-preview cf-test-internal; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $T" \
+              "https://api.cloudflare.com/client/v4/accounts/$A/workers/scripts/$w/settings")
+            echo "preview token reading $w settings: HTTP $code"
+          done
